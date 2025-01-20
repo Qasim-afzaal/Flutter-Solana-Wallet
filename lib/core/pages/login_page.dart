@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:go_router/go_router.dart';
+
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
 
@@ -43,11 +44,10 @@ class _LoginPageState extends State<LoginPage> {
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           const SizedBox(height: 40),
           Center(
-            child: Image.asset(
-              'assets/QuickNodeLogo.png',
-              width: 200,
-            ),
-          ),
+              child: Text(
+            "SOLANA LOGIN",
+            style: TextStyle(fontSize: 25, fontWeight: FontWeight.w700),
+          )),
           const SizedBox(height: 16),
           const Padding(
             padding: EdgeInsets.only(left: 16),
