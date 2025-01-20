@@ -11,145 +11,149 @@ class LoginPage extends StatefulWidget {
 
 class _LoginPageState extends State<LoginPage> {
   final _formKey = GlobalKey<FormState>();
-  final passwordController = TextEditingController();
-  bool validationFailed = false;
-  String? password;
+  final _passwordController = TextEditingController();
+  final _storage = const FlutterSecureStorage();
+
+  bool _validationFailed = false;
   bool _loading = true;
-  String? key;
-  final storage = const FlutterSecureStorage();
+  String? _password;
+  String? _mnemonic;
 
   @override
   void initState() {
     super.initState();
-
-    _checkForSavedLogin().then((credentialsFound) {
-      if (!credentialsFound) {
-        GoRouter.of(context).go("/setup");
-      } else {
-        setState(() {
-          _loading = false;
-        });
-      }
-    });
+    _initializeLogin();
   }
 
-  Widget build(BuildContext context) {
-    if (_loading) {
-      return const Center(
-        child: CircularProgressIndicator(),
-      );
+  Future<void> _initializeLogin() async {
+    final credentialsFound = await _checkForSavedLogin();
+    if (!credentialsFound) {
+      GoRouter.of(context).go("/setup");
+    } else {
+      setState(() {
+        _loading = false;
+      });
     }
-    return Scaffold(
-      body: SingleChildScrollView(
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const SizedBox(height: 40),
-          Center(
+  }
+
+  Future<bool> _checkForSavedLogin() async {
+    _mnemonic = await _storage.read(key: 'mnemonic');
+    _password = await _storage.read(key: 'password');
+    return _mnemonic != null && _password != null;
+  }
+
+  void _onSubmit() {
+    if (_formKey.currentState!.validate()) {
+      GoRouter.of(context).go("/home");
+    }
+  }
+
+  Future<void> _onDifferentAccountPressed() async {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Warning'),
+        content: const Text(
+          'Access to the current account will be lost if the seed phrase is not saved.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              GoRouter.of(context).go("/setup");
+            },
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPasswordField() {
+    return TextFormField(
+      controller: _passwordController,
+      obscureText: true,
+      decoration: const InputDecoration(
+        labelText: 'Password',
+        border: OutlineInputBorder(),
+      ),
+      validator: (value) {
+        if (value != _password) {
+          setState(() {
+            _validationFailed = true;
+          });
+          return 'Invalid Password';
+        }
+        return null;
+      },
+    );
+  }
+
+  Widget _buildLoadingIndicator() {
+    return const Center(
+      child: CircularProgressIndicator(),
+    );
+  }
+
+  Widget _buildLoginForm() {
+    return SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 40),
+            Center(
               child: Text(
-            "SOLANA LOGIN",
-            style: TextStyle(fontSize: 25, fontWeight: FontWeight.w700),
-          )),
-          const SizedBox(height: 16),
-          const Padding(
-            padding: EdgeInsets.only(left: 16),
-            child: Text(
-              'Login',
-              style: TextStyle(
-                fontSize: 32,
-                fontWeight: FontWeight.bold,
+                "SOLANA LOGIN",
+                style: TextStyle(fontSize: 25, fontWeight: FontWeight.w700),
               ),
             ),
-          ),
-          const SizedBox(height: 16),
-          Form(
-            key: _formKey,
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
+            const SizedBox(height: 16),
+            const Text(
+              'Login',
+              style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+            Form(
+              key: _formKey,
               child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  TextFormField(
-                      controller: passwordController,
-                      obscureText: true,
-                      decoration: const InputDecoration(
-                        labelText: 'Password',
-                        border: OutlineInputBorder(),
+                  _buildPasswordField(),
+                  if (_validationFailed)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8.0),
+                      child: Text(
+                        'Invalid Password',
+                        style: const TextStyle(color: Colors.red),
                       ),
-                      validator: (value) {
-                        if (value != password) {
-                          setState(() {
-                            validationFailed = true;
-                          });
-                          return;
-                        }
-                        GoRouter.of(context).go("/home");
-                        return null;
-                        // Validation
-                      }),
-                  const SizedBox(height: 8),
-                  Text(validationFailed ? 'Invalid Password' : '',
-                      style: const TextStyle(color: Colors.red)),
-                  const SizedBox(height: 8),
+                    ),
+                  const SizedBox(height: 16),
                   ElevatedButton(
                     onPressed: _onSubmit,
                     child: const Text('Login'),
                   ),
                   const SizedBox(height: 32),
-                  Center(
-                    child: ElevatedButton(
-                      onPressed: () {
-                        onDifferentAccountPressed(context);
-                      },
-                      child: const Text('Use different Account'),
-                    ),
+                  ElevatedButton(
+                    onPressed: _onDifferentAccountPressed,
+                    child: const Text('Use Different Account'),
                   ),
                 ],
               ),
             ),
-          ),
-        ]),
+          ],
+        ),
       ),
     );
   }
 
-  Future<bool> _checkForSavedLogin() async {
-    key = await storage.read(key: 'mnemonic');
-    password = await storage.read(key: 'password');
-    if (key == null || password == null) {
-      return false;
-    } else {
-      return true;
-    }
-  }
-
-  Future<dynamic> onDifferentAccountPressed(BuildContext context) async {
-    return showDialog(
-        context: context,
-        builder: (context) {
-          return AlertDialog(
-            title: const Text('Warning'),
-            content: const Text(
-                'Access to current account will be lost if seed phrase is lost.'),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                },
-                child: const Text('Cancel'),
-              ),
-              TextButton(
-                onPressed: () {
-                  GoRouter.of(context).go("/setup");
-                },
-                child: const Text('OK'),
-              ),
-            ],
-          );
-        });
-  }
-
-  void _onSubmit() async {
-    if (_formKey.currentState!.validate()) {
-      _formKey.currentState!.save();
-    }
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: _loading ? _buildLoadingIndicator() : _buildLoginForm(),
+    );
   }
 }
