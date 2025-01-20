@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:go_router/go_router.dart';
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
 
@@ -81,6 +82,7 @@ class _LoginPageState extends State<LoginPage> {
                           return;
                         }
                         GoRouter.of(context).go("/home");
+                        return null;
                         // Validation
                       }),
                   const SizedBox(height: 8),
