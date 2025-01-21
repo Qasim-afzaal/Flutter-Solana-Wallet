@@ -19,12 +19,12 @@ final GoRouter router = GoRouter(routes: <GoRoute>[
   GoRoute(
       path: '/inputPhrase',
       builder: (context, state) {
-        return const InputPhares();
+        return const InputPhrases();
       }),
   GoRoute(
       path: '/generatePhrase',
       builder: (context, state) {
-        return const GenratedPhrases();
+        return const GeneratePhraseScreen();
       }),
   GoRoute(
       path: '/passwordSetup/:mnemonic',
@@ -34,6 +34,6 @@ final GoRouter router = GoRouter(routes: <GoRoute>[
   GoRoute(
       path: '/home',
       builder: (context, state) {
-        return const HomePage();
+        return const HomeScreen();
       }),
 ]);
