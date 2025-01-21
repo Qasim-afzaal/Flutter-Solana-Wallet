@@ -180,6 +180,4 @@ This project is licensed under the [MIT License](LICENSE).
 ---
 
 ✨ **Pro Tip**: Crypto is fun but also serious business. Always back up your seed phrases and keep them safe! 🔑
-```
 
-This version adds a more engaging tone while retaining all the critical details. It’s perfect for making the project feel approachable and exciting! 🚀
