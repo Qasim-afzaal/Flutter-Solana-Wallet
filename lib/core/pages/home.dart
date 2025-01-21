@@ -17,101 +17,132 @@ class _HomeScreenState extends State<HomeScreen> {
   String? _balance;
   SolanaClient? client;
   final storage = const FlutterSecureStorage();
+
   @override
   void initState() {
     super.initState();
-    _readPk();
+    _initializeWallet();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('My Wallet'),
-      ),
+      backgroundColor: Colors.black,
+      appBar: _buildAppBar(),
       body: Padding(
-        padding: EdgeInsets.all(16),
+        padding: const EdgeInsets.all(16),
         child: ListView(
           children: [
-            Card(
-              child: Padding(
-                padding: EdgeInsets.all(8),
-                child: Column(
-                  children: [
-                    const Text('Wallet Address',
-                        style: TextStyle(
-                            fontSize: 18, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 8),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        SizedBox(
-                            width: 200,
-                            child: Text(_publicKey ?? 'Loading...')),
-                        IconButton(
-                          icon: const Icon(Icons.copy),
-                          onPressed: () {
-                            if (_publicKey != null) {
-                              Clipboard.setData(
-                                  ClipboardData(text: _publicKey!));
-                            }
-                          },
-                        )
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            Card(
-              child: Padding(
-                padding: EdgeInsets.all(8),
-                child: Column(
-                  children: [
-                    const Text('Balance',
-                        style: TextStyle(
-                            fontSize: 18, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 8),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(_balance ?? 'Loading...'),
-                        IconButton(
-                          icon: const Icon(Icons.refresh),
-                          onPressed: () {
-                            _getBalance();
-                          },
-                        )
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            Card(
-              child: Padding(
-                padding: EdgeInsets.all(8),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text('Log out'),
-                    IconButton(
-                      icon: const Icon(Icons.logout),
-                      onPressed: () {
-                        GoRouter.of(context).go("/");
-                      },
-                    )
-                  ],
-                ),
-              ),
-            ),
+            _buildWalletAddressCard(),
+            const SizedBox(height: 16),
+            _buildBalanceCard(),
+            const SizedBox(height: 16),
+            _buildLogoutCard(context),
           ],
         ),
       ),
     );
   }
 
-  void _readPk() async {
+  AppBar _buildAppBar() {
+    return AppBar(
+      backgroundColor: Colors.black,
+      elevation: 0,
+      title: const Text(
+        'My Wallet',
+        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+      ),
+      centerTitle: true,
+    );
+  }
+
+  Widget _buildWalletAddressCard() {
+    return _buildCard(
+      title: 'Wallet Address',
+      content: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Expanded(
+            child: Text(
+              _publicKey ?? 'Loading...',
+              style: const TextStyle(color: Colors.white),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.copy, color: Colors.white),
+            onPressed: () {
+              if (_publicKey != null) {
+                Clipboard.setData(ClipboardData(text: _publicKey!));
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Address copied to clipboard!')),
+                );
+              }
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBalanceCard() {
+    return _buildCard(
+      title: 'Balance',
+      content: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            _balance != null ? '$_balance SOL' : 'Loading...',
+            style: const TextStyle(color: Colors.white),
+          ),
+          IconButton(
+            icon: const Icon(Icons.refresh, color: Colors.white),
+            onPressed: _getBalance,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLogoutCard(BuildContext context) {
+    return _buildCard(
+      title: 'Log Out',
+      content: IconButton(
+        icon: const Icon(Icons.logout, color: Colors.red),
+        onPressed: () {
+          GoRouter.of(context).go("/");
+        },
+      ),
+    );
+  }
+
+  Widget _buildCard({required String title, required Widget content}) {
+    return Card(
+      color: Colors.grey[900],
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      elevation: 4,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(height: 8),
+            content,
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _initializeWallet() async {
     final mnemonic = await storage.read(key: 'mnemonic');
     if (mnemonic != null) {
       final keypair = await Ed25519HDKeyPair.fromMnemonic(mnemonic);
@@ -122,7 +153,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  void _initializeClient() async {
+  Future<void> _initializeClient() async {
     await dotenv.load(fileName: ".env");
 
     client = SolanaClient(
@@ -132,15 +163,20 @@ class _HomeScreenState extends State<HomeScreen> {
     _getBalance();
   }
 
-  void _getBalance() async {
+  Future<void> _getBalance() async {
     setState(() {
       _balance = null;
     });
-    final getBalance = await client?.rpcClient
-        .getBalance(_publicKey!, commitment: Commitment.confirmed);
-    final balance = (getBalance!.value) / lamportsPerSol;
-    setState(() {
-      _balance = balance.toString();
-    });
+
+    if (client != null && _publicKey != null) {
+      final balanceResult = await client!.rpcClient.getBalance(
+        _publicKey!,
+        commitment: Commitment.confirmed,
+      );
+      final balance = (balanceResult.value) / lamportsPerSol;
+      setState(() {
+        _balance = balance.toStringAsFixed(4);
+      });
+    }
   }
 }
