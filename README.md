@@ -1,6 +1,6 @@
 # 🌟 Solana Wallet Flutter App 🌟
 
-Dive into the world of Solana with this Flutter app! 🚀 This project lets you create Solana wallets, interact with the blockchain, and leverage QuickNode APIs for all your Web3 needs. Let's make blockchain fun and easy! 😎
+Dive into the world of Solana with this Flutter app! 🚀 This project lets you create Solana wallets, interact with the blockchain, and leverage QuickNode APIs for all your Web3 needs. Let's make blockchain fun and easy! 
 
 ---
 
